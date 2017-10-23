@@ -1,0 +1,24 @@
+QUICK AND DIRTY
+===============
+
+There are three scripts, which are adjustGammaTofficer.py, avgthputdelay.py 
+and copydata.py respectively. Scripts avgthputdelay.py and copydata.py are called by 
+adjustGammaTofficer.py.
+	sudo python adjustGammaTofficer.py
+
+
+First, adjustGammaTofficer.py use of initial gamma and T as input, then it run pqsa 
+simulator to get a file which store throughput and delay.
+
+Second, When pqsa simulator completed, adjustGammaTofficer.py call script avgthputdelay.py 
+to compute average throughput and average delay.
+
+Third, adjustGammaTofficer.py will increase gamma if new throughput which get from 
+avgthputdelay.py is more than old throughput and new delay is less than THRESHOLD(default 100ms), 
+otherwise, reduce gamma. than use new gamma and T as input to run pqsa simulator.
+
+There are two important functions in script adjustGammaTofficer.py, which are UpdateGammaAndT() 
+and RunMulThread() respectively. Function UpdateGammaAndT() through return value(average throughput
+and average delay) from avgthputdelay.py to compute gamma's or T's changing step, step maybe is a 
+positive number, also can be a negative number. Function RunMulThread() call process_bw_level() to 
+run pqsa simulator, have seven parameters: level, rate, window, period, _gamma, _t and trace. 
