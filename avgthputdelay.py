@@ -5,17 +5,17 @@ import os
 import sys
 import copydata
 
-#path = '/home/wanwenkai/simulator_scripts/annealing_scripts/downlink_400000/'
+#path = '/home/wanwenkai/simulator_scripts/annealing_scripts/downlink_500000/'
 
-def GetThputDelay(path, _gamma):
+def GetThputDelay(path, _gamma, _t):
     bwList = []
     delayList = []
-
     for files in os.listdir(path):
         if files.endswith('.sum'):
             gamma = float(files.split('-')[-5])
+            t = float(files.split('-')[-4])
             #t = int(files.split('-')[-4])
-            if gamma == _gamma:
+            if gamma == _gamma and t == _t:
                 copydata.Show ("gamma =", gamma, "_gamma =", _gamma)
                 files = os.path.join(path, files)
                 #print files
@@ -37,4 +37,4 @@ def GetThputDelay(path, _gamma):
     return avgThput, avgDelay
 
 #if __name__ == "__main__":
-#	GetThputDelay(path, 1.41, 5000)
+#    GetThputDelay(path, 1.29)
