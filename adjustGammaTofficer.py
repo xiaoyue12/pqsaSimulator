@@ -15,7 +15,7 @@ top = '/home/wanwenkai/simulator_scripts/verify_sourceData/'
 datapath = '/home/wanwenkai/simulator_scripts/annealing_scripts/'
 savePath = '/home/wanwenkai/simulator_scripts/annealingData/'
 #initial bandwidth level, rate, window and period
-item = ['downlink_400000', '10', '110000', '2000000']
+item = ['downlink_800000', '10', '110000', '2000000']
 gammaList = []
 tList = []
 delta = []
@@ -111,6 +111,16 @@ def GetCurrentPath():
                 return dirname
     return 0
 
+def GetGammaToMaxThput():
+    maxValueIndex = thputList.index(max(thputList))
+    if delayList(maxValueIndex) > THRESHOLD:
+        del thputList[maxValueIndex]
+        del delayList[maxValueIndex]
+        del gammaList[maxValueIndex]
+        maxValueIndex = GetGammaToMaxThput()
+
+    return maxValueIndex
+
 def AppendParameter(p_temp, PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
         copydata.Show("append parameter failure! because PARAMETER = FLAG_EXIT.")
@@ -124,51 +134,45 @@ def AppendParameter(p_temp, PARAMETER):
     if PARAMETER == parameter.FLAG_GAMMA:
         gammaList.append(round(p_temp, 2))
         thput, delay = avgthputdelay.GetThputDelay(path, p_temp, parameter.INIT_T)
-        thputList.append(round(thput, 2))
-        delayList.append(round(delay, 2))
     elif PARAMETER == parameter.FLAG_T:
         tList.append(round(p_temp, 2))
         thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], p_temp)
-        thputList.append(round(thput, 2))
-        delayList.append(round(delay, 2))
-    
+        
+    thputList.append(round(thput, 2))
+    delayList.append(round(delay, 2))
+
+def Initial(PARAMETER, aparameter, gamma = parameter.INIT_GAMMA, t = parameter.INIT_T, 
+        capacity = parameter.INIT_CAPACITY, delta = parameter.INIT_DELTA):
+    RunMulThread(gamma, t, capacity, delta)
+    AppendParameter(aparameter, PARAMETER)
+
 def InitialFunc(PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
         copydata.Show("initial failure! because PARAMETER = FLAG_EXIT.")
 
     #fix T, capacity, delta, adjust gamma
     if PARAMETER == parameter.FLAG_GAMMA:
-        RunMulThread(parameter.INIT_GAMMA, parameter.INIT_T, 
-                parameter.INIT_CAPACITY, parameter.INIT_DELTA)
-        AppendParameter(parameter.INIT_GAMMA, PARAMETER)
-        RunMulThread(parameter.SEC_GAMMA, parameter.INIT_T, 
-                parameter.INIT_CAPACITY, parameter.INIT_DELTA)
-        AppendParameter(parameter.SEC_GAMMA, PARAMETER)
-    
+        Initial(PARAMETER, parameter.INIT_GAMMA)
+        Initial(PARAMETER, parameter.SEC_GAMMA, parameter.SEC_GAMMA)
+            
     #fix gamma, capacity, delta, adjust T
     elif PARAMETER == parameter.FLAG_T:
-        copydata.Show("initialfunc PARAMETER =", PARAMETER)
-        copydata.Show(gammaList[-1], parameter.INIT_T)
-        RunMulThread(gammaList[-1], parameter.INIT_T, 
-                parameter.INIT_CAPACITY, parameter.INIT_DELTA)
-        AppendParameter(parameter.INIT_T, PARAMETER)
-        RunMulThread(gammaList[-1], parameter.SEC_T, 
-                parameter.INIT_CAPACITY, parameter.INIT_DELTA)
-        AppendParameter(parameter.SEC_T, PARAMETER)
+        Initial(PARAMETER, parameter.INIT_T,gammaList(GetGammaToMaxThput()))
+        Initial(PARAMETER, parameter.SET_T, gammaList(GetGammaToMaxThput()), parameter.SET_T)
 '''
     #fix gamma, T, delta, adjust capacity
     elif PARAMETER == parameter.FLAG_CAPACITY:
-        RunMulThread(gammaList[-1], tList[-1], parameter.INIT_CAPACITY, parameter.INIT_DELTA)
-        AppendParameter(parameter.INIT_CAPACITY, PARAMETER)
-        RunMulThread(gammaList[-1], tList[-1], parameter.SEC_CAPACITY, parameter.INIT_DELTA)
-        AppendParameter(parameter.SEC_CAPACITY, PARAMETER)
+        Initial(PARAMETER, parameter.INIT_CAPACITY, gammaList[-1], 
+                tList[-1])
+        Initial(PARAMETER, parameter.SEC_CAPACITY, gammaList[-1], 
+                tList[-1], parameter.SEC_CAPACITY)
 
     #fix gamma, T, capacity, adjust delta
     else :
-        RunMulThread(gammaList[-1], tList[-1], capacityList[-1], parameter.INIT_DELTA)
-        AppendParameter(parameter.INIT_DELTA, PARAMETER)
-        RunMulThread(gammaList[-1], tList[-1], capacityList[-1], parameter.SEC_DELTA)
-        AppendParameter(parameter.SEC_DELTA, PARAMETER)
+        Initial(PARAMETER, parameter.INIT_DELTA, gammaList[-1], 
+                tList[-1], capacityList[-1])
+        Initial(PARAMETER, parameter.SEC_DELTA, gammaList[-1], 
+                tList[-1], capacityList[-1], parameter.SEC_DELTA)
 '''
 def RunFunction(p_temp, PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
@@ -178,11 +182,11 @@ def RunFunction(p_temp, PARAMETER):
     if PARAMETER == parameter.FLAG_GAMMA:
         RunMulThread(p_temp, parameter.INIT_T, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
     elif PARAMETER == parameter.FLAG_T:
-        RunMulThread(gammaList[-1], p_temp, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
+        RunMulThread(gammaList[GetGammaToMaxThput()], p_temp, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
     elif PARAMETER == parameter.FLAG_CAPACITY:
-        RunMulThread(gammaList[-1], tList[-1], p_temp, parameter.INIT_DELTA)
+        RunMulThread(gammaList[GetGammaToMaxThput()], tList[-1], p_temp, parameter.INIT_DELTA)
     else :
-        RunMulThread(gammaList[-1], tList[-1], capacityList[-1], p_temp)
+        RunMulThread(gammaList[GetGammaToMaxThput()], tList[-1], capacityList[-1], p_temp)
 
 def UpdateParameter(newThput, delay, bdLevel, PARAMETER):
     if PARAMETER == parameter.FLAG_GAMMA:
@@ -231,22 +235,20 @@ if __name__ == "__main__":
 
         while not stopIteration():
             path = GetCurrentPath()
-            #print path
             if path == 0:
                 copydata.Show("Get current path failure!")
             bdLevel = int(item[0].split('_')[-1])
             #p_temp can be gamma, T, capacity, delta
             p_temp = UpdateParameter(thputList[-1], delayList[-1], bdLevel/100000, PARAMETER)
             if ChangeParameter(p_temp, PARAMETER):
-                copydata.Show ("p_temp = ", p_temp, "PARAMETER = ", PARAMETER)
+                #copydata.Show ("p_temp = ", p_temp, "PARAMETER = ", PARAMETER)
                 PARAMETER = p_temp
                 break
             RunFunction(p_temp, PARAMETER)
-            #RunMulThread(gamma, t)
-            copydata.Show("gamma =", p_temp)
+            #copydata.Show("gamma =", p_temp)
             AppendParameter(p_temp, PARAMETER)
         if IteraterExit(PARAMETER):
-            copydata.Show("iterater done!", "PARAMETER =", PARAMETER)
+            copydata.Show("iterater done!")
             break
     WriteResult()
     UpdateData()
