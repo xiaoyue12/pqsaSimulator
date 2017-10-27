@@ -15,7 +15,7 @@ top = '/home/wanwenkai/simulator_scripts/verify_sourceData/'
 datapath = '/home/wanwenkai/simulator_scripts/annealing_scripts/'
 savePath = '/home/wanwenkai/simulator_scripts/annealingData/'
 #initial bandwidth level, rate, window and period
-item = ['downlink_800000', '10', '110000', '2000000']
+item = ['downlink_400000', '10', '110000', '2000000']
 gammaList = []
 tList = []
 delta = []
@@ -113,7 +113,7 @@ def GetCurrentPath():
 
 def GetGammaToMaxThput():
     maxValueIndex = thputList.index(max(thputList))
-    if delayList(maxValueIndex) > THRESHOLD:
+    if delayList[maxValueIndex] > THRESHOLD:
         del thputList[maxValueIndex]
         del delayList[maxValueIndex]
         del gammaList[maxValueIndex]
@@ -136,6 +136,7 @@ def AppendParameter(p_temp, PARAMETER):
         thput, delay = avgthputdelay.GetThputDelay(path, p_temp, parameter.INIT_T)
     elif PARAMETER == parameter.FLAG_T:
         tList.append(round(p_temp, 2))
+        copydata.Show("t =", p_temp)
         thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], p_temp)
         
     thputList.append(round(thput, 2))
@@ -157,8 +158,9 @@ def InitialFunc(PARAMETER):
             
     #fix gamma, capacity, delta, adjust T
     elif PARAMETER == parameter.FLAG_T:
-        Initial(PARAMETER, parameter.INIT_T,gammaList(GetGammaToMaxThput()))
-        Initial(PARAMETER, parameter.SET_T, gammaList(GetGammaToMaxThput()), parameter.SET_T)
+        gammaList.append(round(gammaList[GetGammaToMaxThput()], 2))
+        Initial(PARAMETER, parameter.INIT_T,gammaList[-1])
+        Initial(PARAMETER, parameter.SEC_T, gammaList[-1], parameter.SEC_T)
 '''
     #fix gamma, T, delta, adjust capacity
     elif PARAMETER == parameter.FLAG_CAPACITY:
@@ -178,15 +180,15 @@ def RunFunction(p_temp, PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
         copydata.Show("run failure! because PARAMETER = parameter.FLAG_EXIT.")
         sys.exit(0)
-
+    #maxgamma = gammaList[GetGammaToMaxThput()]
     if PARAMETER == parameter.FLAG_GAMMA:
         RunMulThread(p_temp, parameter.INIT_T, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
     elif PARAMETER == parameter.FLAG_T:
-        RunMulThread(gammaList[GetGammaToMaxThput()], p_temp, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
+        RunMulThread(gammaList[-1], p_temp, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
     elif PARAMETER == parameter.FLAG_CAPACITY:
-        RunMulThread(gammaList[GetGammaToMaxThput()], tList[-1], p_temp, parameter.INIT_DELTA)
+        RunMulThread(gammaList[-1], tList[-1], p_temp, parameter.INIT_DELTA)
     else :
-        RunMulThread(gammaList[GetGammaToMaxThput()], tList[-1], capacityList[-1], p_temp)
+        RunMulThread(gammaList[-1], tList[-1], capacityList[-1], p_temp)
 
 def UpdateParameter(newThput, delay, bdLevel, PARAMETER):
     if PARAMETER == parameter.FLAG_GAMMA:
