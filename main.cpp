@@ -545,7 +545,6 @@ int main (int argc, char **argv)
         return 0;        
     }
     
-	printf(stdout, "$$$$$$$$\n");
     node* receiver = new node(RECEIVER, atoi(argv[1]), atoi(argv[4]), atoi(argv[2]), atoi(argv[3]));
     node* sender = new node(SENDER, atoi(argv[1]), atoi(argv[4]), atoi(argv[2]), atoi(argv[3]));
     
@@ -597,13 +596,15 @@ int main (int argc, char **argv)
     strcat(bw_level, argv[1]);
     strcat(bw_level, "-");
     strcat(bw_level, argv[2]);
+	strcat(bw_level, "-");
+	strcat(bw_level, argv[3]);
     strcat(bw_level, "-");
     strcat(bw_level, argv[5]);
         
     link* radioLink = new link(MAX_RADIO_LINK_BW, bw_level);
     
     strcat(bw_level, ".sum");
-    //fprintf(stderr, "%s\n", bw_level);    
+    fprintf(stderr, "%s\n", bw_level);    
     sum = fopen(bw_level, "w");
           
     //fprintf(stderr, "sending rate %u sliding window interval %u sliding window capacity %u\n", 

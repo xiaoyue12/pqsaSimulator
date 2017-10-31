@@ -7,16 +7,19 @@ import copydata
 
 #path = '/home/wanwenkai/simulator_scripts/annealing_scripts/downlink_500000/'
 
-def GetThputDelay(path, _gamma, _t):
+def GetThputDelay(path, _gamma, _t, _window, _delta):
     bwList = []
     delayList = []
+    copydata.Show("_gamma =", _gamma, "_t =", _t, "_window =", _window, 
+            "_delta =", _delta)
     for files in os.listdir(path):
         if files.endswith('.sum'):
-            gamma = float(files.split('-')[-5])
-            t = float(files.split('-')[-4])
+            gamma = float(files.split('-')[-6])
+            t = float(files.split('-')[-5])
+            window = float(files.split('-')[-3])
+            delta = float(files.split('-')[-2])
             #t = int(files.split('-')[-4])
-            if gamma == _gamma and t == _t:
-                copydata.Show ("gamma =", gamma, "_gamma =", _gamma)
+            if gamma == _gamma and t == _t and _window == window and _delta == delta:
                 files = os.path.join(path, files)
                 #print files
                 for line in open(files):

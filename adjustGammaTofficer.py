@@ -14,12 +14,12 @@ import update
 top = '/home/wanwenkai/simulator_scripts/verify_sourceData/'
 datapath = '/home/wanwenkai/simulator_scripts/annealing_scripts/'
 savePath = '/home/wanwenkai/simulator_scripts/annealingData/'
-#initial bandwidth level, rate, window and period
-item = ['downlink_400000', '10', '110000', '2000000']
+#initial bandwidth level, rate, capacity and period
+item = ['downlink_400000', '10', '30000', '2000000']
 gammaList = []
 tList = []
-delta = []
-capacity = []
+deltaList = []
+windowList = []
 
 thputList = []
 delayList = []
@@ -57,24 +57,24 @@ class process_bw_level(threading.Thread):
 
 def GetInitialValue():
     rate = int(item[1])
-    window = int(item[2])
+    capacity = int(item[2])
     period = int(item[3])
     
-    return rate, window, period
+    return rate, capacity, period
 
-def IsNewFile(files, level, trace, gamma, t):
+def IsNewFile(files, level, trace, gamma, t, window, delta):
     if os.path.isfile(trace):
-        rate, window, period = GetInitialValue()
+        rate, capacity, period = GetInitialValue()
         output_path = level.split('/')[-1]
         output_path = os.path.join(output_path, files.split('.')[0] + '-' + str(gamma)\
-         + '-' + str(t) + '-' + str(rate) + '-' + str(window) + '-' + str(period) + '.sum')
+         + '-' + str(t) + '-' + str(rate) + '-' + str(window) + '-' + str(delta) +'-' + str(period) + '.sum')
         # print output_path
         if os.path.isfile(output_path):
             return False
         else :
             return True
 
-def RunMulThread(_gamma, _t, _capacity, _delta):
+def RunMulThread(_gamma, _t, _window, _delta):
     threadList = []
     threadCount = 0
     level = os.path.join(top, item[0])
@@ -83,10 +83,10 @@ def RunMulThread(_gamma, _t, _capacity, _delta):
             break
         if os.path.isdir(level):
             trace = os.path.join(level, files)
-            if IsNewFile(files, level, trace, _gamma, _t):
-                rate, window, period = GetInitialValue()
+            if IsNewFile(files, level, trace, _gamma, _t, _window, _delta):
+                rate, capacity, period = GetInitialValue()
                 threadCount = threadCount + 1
-                thread_id = process_bw_level(level, rate, window, period, _gamma, _t, _capacity, _delta, trace)
+                thread_id = process_bw_level(level, rate, _window, period, _gamma, _t, capacity, _delta, trace)
                 thread_id.start()
                 threadList.append(thread_id)
                 time.sleep(1)
@@ -111,13 +111,13 @@ def GetCurrentPath():
                 return dirname
     return 0
 
-def GetGammaToMaxThput():
+def GetIndexToMaxThput():
     maxValueIndex = thputList.index(max(thputList))
     if delayList[maxValueIndex] > THRESHOLD:
         del thputList[maxValueIndex]
         del delayList[maxValueIndex]
         del gammaList[maxValueIndex]
-        maxValueIndex = GetGammaToMaxThput()
+        maxValueIndex = GetIndexToMaxThput()
 
     return maxValueIndex
 
@@ -133,62 +133,80 @@ def AppendParameter(p_temp, PARAMETER):
     
     if PARAMETER == parameter.FLAG_GAMMA:
         gammaList.append(round(p_temp, 2))
-        thput, delay = avgthputdelay.GetThputDelay(path, p_temp, parameter.INIT_T)
+        thput, delay = avgthputdelay.GetThputDelay(path, p_temp, parameter.INIT_T, parameter.INIT_WINDOW, parameter.INIT_DELTA)
     elif PARAMETER == parameter.FLAG_T:
         tList.append(round(p_temp, 2))
         copydata.Show("t =", p_temp)
-        thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], p_temp)
+        thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], p_temp, parameter.INIT_WINDOW, parameter.INIT_DELTA)
+    elif PARAMETER == parameter.FLAG_WINDOW:
+        windowList.append(round(p_temp, 2))
+        copydata.Show("window =", p_temp)
+        thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], tList[-1], p_temp, parameter.INIT_DELTA)
+    else:
+        deltaList.append(round(p_temp, 2))
+        copydata.Show("delta =", p_temp)
+        thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], tList[-1], windowList[-1], p_temp)
+
         
     thputList.append(round(thput, 2))
     delayList.append(round(delay, 2))
 
+def ClearList(pList):
+    global thputList, delayList
+    copydata.Show(pList)
+    copydata.Show(thputList)
+    pList.append(round(pList[GetIndexToMaxThput()], 2))
+    thputList = []
+    delayList = []
+
 def Initial(PARAMETER, aparameter, gamma = parameter.INIT_GAMMA, t = parameter.INIT_T, 
-        capacity = parameter.INIT_CAPACITY, delta = parameter.INIT_DELTA):
-    RunMulThread(gamma, t, capacity, delta)
+        window = parameter.INIT_WINDOW, delta = parameter.INIT_DELTA):
+    RunMulThread(gamma, t, window, delta)
     AppendParameter(aparameter, PARAMETER)
 
 def InitialFunc(PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
         copydata.Show("initial failure! because PARAMETER = FLAG_EXIT.")
 
-    #fix T, capacity, delta, adjust gamma
+    #fix T, WINDOW, delta, adjust gamma
     if PARAMETER == parameter.FLAG_GAMMA:
         Initial(PARAMETER, parameter.INIT_GAMMA)
         Initial(PARAMETER, parameter.SEC_GAMMA, parameter.SEC_GAMMA)
             
-    #fix gamma, capacity, delta, adjust T
+    #fix gamma, WINDOW, delta, adjust T
     elif PARAMETER == parameter.FLAG_T:
-        gammaList.append(round(gammaList[GetGammaToMaxThput()], 2))
+        ClearList(gammaList)
         Initial(PARAMETER, parameter.INIT_T,gammaList[-1])
         Initial(PARAMETER, parameter.SEC_T, gammaList[-1], parameter.SEC_T)
-'''
-    #fix gamma, T, delta, adjust capacity
-    elif PARAMETER == parameter.FLAG_CAPACITY:
-        Initial(PARAMETER, parameter.INIT_CAPACITY, gammaList[-1], 
-                tList[-1])
-        Initial(PARAMETER, parameter.SEC_CAPACITY, gammaList[-1], 
-                tList[-1], parameter.SEC_CAPACITY)
 
-    #fix gamma, T, capacity, adjust delta
+    #fix gamma, T, delta, adjust WINDOW
+    elif PARAMETER == parameter.FLAG_WINDOW:
+        ClearList(tList)
+        Initial(PARAMETER, parameter.INIT_WINDOW, gammaList[-1], 
+                tList[-1])
+        Initial(PARAMETER, parameter.SEC_WINDOW, gammaList[-1], 
+                tList[-1], parameter.SEC_WINDOW)
+
+    #fix gamma, T, WINDOW, adjust delta
     else :
+        ClearList(windowList)
         Initial(PARAMETER, parameter.INIT_DELTA, gammaList[-1], 
-                tList[-1], capacityList[-1])
+                tList[-1], windowList[-1])
         Initial(PARAMETER, parameter.SEC_DELTA, gammaList[-1], 
-                tList[-1], capacityList[-1], parameter.SEC_DELTA)
-'''
+                tList[-1], windowList[-1], parameter.SEC_DELTA)
+
 def RunFunction(p_temp, PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
         copydata.Show("run failure! because PARAMETER = parameter.FLAG_EXIT.")
         sys.exit(0)
-    #maxgamma = gammaList[GetGammaToMaxThput()]
     if PARAMETER == parameter.FLAG_GAMMA:
-        RunMulThread(p_temp, parameter.INIT_T, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
+        RunMulThread(p_temp, parameter.INIT_T, parameter.INIT_WINDOW, parameter.INIT_DELTA)
     elif PARAMETER == parameter.FLAG_T:
-        RunMulThread(gammaList[-1], p_temp, parameter.INIT_CAPACITY, parameter.INIT_DELTA)
-    elif PARAMETER == parameter.FLAG_CAPACITY:
+        RunMulThread(gammaList[-1], p_temp, parameter.INIT_WINDOW, parameter.INIT_DELTA)
+    elif PARAMETER == parameter.FLAG_WINDOW:
         RunMulThread(gammaList[-1], tList[-1], p_temp, parameter.INIT_DELTA)
     else :
-        RunMulThread(gammaList[-1], tList[-1], capacityList[-1], p_temp)
+        RunMulThread(gammaList[-1], tList[-1], windowList[-1], p_temp)
 
 def UpdateParameter(newThput, delay, bdLevel, PARAMETER):
     if PARAMETER == parameter.FLAG_GAMMA:
@@ -197,6 +215,12 @@ def UpdateParameter(newThput, delay, bdLevel, PARAMETER):
     elif PARAMETER == parameter.FLAG_T:
         copydata.Show("tList history", tList)
         return update.UpdateT(newThput, delay, bdLevel, thputList[-2], tList[-2], tList[-1])
+    elif PARAMETER == parameter.FLAG_WINDOW:
+        copydata.Show("windowList history", windowList)
+        return update.UpdateWindow(newThput, delay, bdLevel, thputList[-2], windowList[-2], windowList[-1])
+    else:
+        copydata.Show("deltaList history", deltaList)
+        return update.UpdateDelta(newThput, delay, bdLevel, thputList[-2], deltaList[-2], deltaList[-1])
 
 def ChangeParameter(p_temp, PARAMETER):
     if isinstance(p_temp, float):
@@ -230,7 +254,7 @@ def UpdateData():
     shutil.rmtree(sPath)
 
 if __name__ == "__main__":
-
+    global PARAMETER
     while 1:
 
         InitialFunc(PARAMETER)
@@ -240,7 +264,7 @@ if __name__ == "__main__":
             if path == 0:
                 copydata.Show("Get current path failure!")
             bdLevel = int(item[0].split('_')[-1])
-            #p_temp can be gamma, T, capacity, delta
+            #p_temp can be gamma, T, window, delta
             p_temp = UpdateParameter(thputList[-1], delayList[-1], bdLevel/100000, PARAMETER)
             if ChangeParameter(p_temp, PARAMETER):
                 #copydata.Show ("p_temp = ", p_temp, "PARAMETER = ", PARAMETER)
