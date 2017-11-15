@@ -1,24 +1,12 @@
-QUICK AND DIRTY
-===============
+1.按照脚本adjustGammaTofficer.py的开头所示建好文件夹
+	<1> top表示原始数据存放的地方，将分好类的原始数据放在top目录下面，比如从downlink_0到downlink_1000000的原始数据;
+	<2> datapath表示运行脚本时生成的数据临时存放的地方，比如trace来自于top中的downlink_600000，那么就会在datapath目录
+		下面生成一个downlink_600000的文件夹;
+	<3> 当脚本运行结束后，所有datapath下的临时downlink文件夹会自动被剪切到savepath下面。
 
-There are three scripts, which are adjustGammaTofficer.py, avgthputdelay.py 
-and copydata.py respectively. Scripts avgthputdelay.py and copydata.py are called by 
-adjustGammaTofficer.py.
-	sudo python adjustGammaTofficer.py
-
-
-First, adjustGammaTofficer.py use of initial gamma and T as input, then it run pqsa 
-simulator to get a file which store throughput and delay.
-
-Second, When pqsa simulator completed, adjustGammaTofficer.py call script avgthputdelay.py 
-to compute average throughput and average delay.
-
-Third, adjustGammaTofficer.py will increase gamma if new throughput which get from 
-avgthputdelay.py is more than old throughput and new delay is less than THRESHOLD(default 100ms), 
-otherwise, reduce gamma. than use new gamma and T as input to run pqsa simulator.
-
-There are two important functions in script adjustGammaTofficer.py, which are UpdateGammaAndT() 
-and RunMulThread() respectively. Function UpdateGammaAndT() through return value(average throughput
-and average delay) from avgthputdelay.py to compute gamma's or T's changing step, step maybe is a 
-positive number, also can be a negative number. Function RunMulThread() call process_bw_level() to 
-run pqsa simulator, have seven parameters: level, rate, window, period, _gamma, _t and trace. 
+2.运行说明：
+	<1> 检测result.txt文件是否存在，如果不存在则不用管，如果存在就要先看看这个文件有没有数据。因为每次运行都会以追加的
+		方式写result.txt这个文件，这个文件里面存放的是最终运行结果。如果不知道上一次的数据在哪里结束，就会很容易和这次
+		的测试结果弄混。
+	<2> make
+	<3> python adjustGammaTofficer.py
