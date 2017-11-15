@@ -15,7 +15,7 @@ top = '/home/wanwenkai/simulator_scripts/verify_sourceData/'
 datapath = '/home/wanwenkai/simulator_scripts/annealing_scripts/'
 savePath = '/home/wanwenkai/simulator_scripts/annealingData/'
 #initial bandwidth level, rate, capacity and period
-item = ['downlink_400000', '10', '30000', '2000000']
+item = ['downlink_800000', '10', '30000', '2000000']
 gammaList = []
 tList = []
 deltaList = []
@@ -121,10 +121,10 @@ def GetIndexToMaxThput():
 
     return maxValueIndex
 
-def AppendParameter(p_temp, PARAMETER):
+def AppendParameter(PARAMETER, p_temp):
     if PARAMETER == parameter.FLAG_EXIT:
         copydata.Show("append parameter failure! because PARAMETER = FLAG_EXIT.")
-        return
+        sys.exit(0)
 
     path = GetCurrentPath()
     if path == 0:
@@ -146,7 +146,6 @@ def AppendParameter(p_temp, PARAMETER):
         deltaList.append(round(p_temp, 2))
         copydata.Show("delta =", p_temp)
         thput, delay = avgthputdelay.GetThputDelay(path, gammaList[-1], tList[-1], windowList[-1], p_temp)
-
         
     thputList.append(round(thput, 2))
     delayList.append(round(delay, 2))
@@ -162,7 +161,7 @@ def ClearList(pList):
 def Initial(PARAMETER, aparameter, gamma = parameter.INIT_GAMMA, t = parameter.INIT_T, 
         window = parameter.INIT_WINDOW, delta = parameter.INIT_DELTA):
     RunMulThread(gamma, t, window, delta)
-    AppendParameter(aparameter, PARAMETER)
+    AppendParameter(PARAMETER, aparameter)
 
 def InitialFunc(PARAMETER):
     if PARAMETER == parameter.FLAG_EXIT:
@@ -176,22 +175,19 @@ def InitialFunc(PARAMETER):
     #fix gamma, WINDOW, delta, adjust T
     elif PARAMETER == parameter.FLAG_T:
         ClearList(gammaList)
-        Initial(PARAMETER, parameter.INIT_T,gammaList[-1])
+        AppendParameter(PARAMETER, parameter.INIT_T)
         Initial(PARAMETER, parameter.SEC_T, gammaList[-1], parameter.SEC_T)
 
     #fix gamma, T, delta, adjust WINDOW
     elif PARAMETER == parameter.FLAG_WINDOW:
         ClearList(tList)
-        Initial(PARAMETER, parameter.INIT_WINDOW, gammaList[-1], 
-                tList[-1])
-        Initial(PARAMETER, parameter.SEC_WINDOW, gammaList[-1], 
-                tList[-1], parameter.SEC_WINDOW)
+        AppendParameter(PARAMETER, parameter.INIT_WINDOW)
+        Initial(PARAMETER, parameter.SEC_WINDOW, gammaList[-1], tList[-1], parameter.SEC_WINDOW)
 
     #fix gamma, T, WINDOW, adjust delta
-    else :
+    elif PARAMETER == parameter.FLAG_DELTA:
         ClearList(windowList)
-        Initial(PARAMETER, parameter.INIT_DELTA, gammaList[-1], 
-                tList[-1], windowList[-1])
+        AppendParameter(PARAMETER, parameter.INIT_DELTA)
         Initial(PARAMETER, parameter.SEC_DELTA, gammaList[-1], 
                 tList[-1], windowList[-1], parameter.SEC_DELTA)
 
@@ -237,10 +233,20 @@ def IteraterExit(PARAMETER):
     else:
         return False
 
-def WriteResult():
-    writefile = open('result.txt', 'w')
-    for line in range(len(gammaList)):
-        str_write = '%lf %lf %lf\n'%(gammaList[line], thputList[line], delayList[line])
+def WriteResult(temp):
+    writefile = open('result.txt', 'a')
+    tempList = []
+    if temp == parameter.FLAG_T:
+        tempList = gammaList
+    elif temp == parameter.FLAG_WINDOW:
+        tempList = tList
+    elif temp == parameter.FLAG_DELTA:
+        tempList = windowList
+    else:
+        tempList = deltaList
+
+    for line in range(len(tempList)):
+        str_write = '%lf %lf %lf\n'%(tempList[line], thputList[line], delayList[line])
         writefile.write(str_write)
     writefile.close()
 
@@ -254,9 +260,8 @@ def UpdateData():
     shutil.rmtree(sPath)
 
 if __name__ == "__main__":
-    global PARAMETER
-    while 1:
 
+    while 1:
         InitialFunc(PARAMETER)
 
         while not stopIteration():
@@ -264,18 +269,20 @@ if __name__ == "__main__":
             if path == 0:
                 copydata.Show("Get current path failure!")
             bdLevel = int(item[0].split('_')[-1])
-            #p_temp can be gamma, T, window, delta
-            p_temp = UpdateParameter(thputList[-1], delayList[-1], bdLevel/100000, PARAMETER)
-            if ChangeParameter(p_temp, PARAMETER):
-                #copydata.Show ("p_temp = ", p_temp, "PARAMETER = ", PARAMETER)
-                PARAMETER = p_temp
+            #temp can be gamma, T, window, delta
+            temp = UpdateParameter(thputList[-1], delayList[-1], bdLevel/100000, PARAMETER)
+            if ChangeParameter(temp, PARAMETER):
+                WriteResult(temp)
+                copydata.Show ("temp = ", temp, "PARAMETER = ", PARAMETER)
+                PARAMETER = temp
                 break
-            RunFunction(p_temp, PARAMETER)
+            RunFunction(temp, PARAMETER)
             #copydata.Show("gamma =", p_temp)
-            AppendParameter(p_temp, PARAMETER)
+            AppendParameter(PARAMETER, temp)
+
         if IteraterExit(PARAMETER):
             copydata.Show("iterater done!")
             break
-    WriteResult()
+    #WriteResult()
     UpdateData()
 

@@ -120,10 +120,3 @@ def UpdateDelta(newThput, delay, bdLevel, oldThput, oldDelta, newDelta):
     else:
         copydata.Show ("Iteration is done!")
         return parameter.FLAG_EXIT
-
-#def UpdateParameter(PARAMETER, newThput, delay, bdLevel):
-#    if PARAMETER == parameter.FLAG_GAMMA:
-#        return UpdateGamma(newThput, delay, bdLevel)
-#    elif PARAMETER == parameter.FLAG_T:
-#        return UpdateT(newThput, delay, bdLevel)
-
