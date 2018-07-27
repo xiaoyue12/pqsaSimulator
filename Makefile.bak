@@ -1,0 +1,15 @@
+CC=g++
+CXXFLAGS += -std=c++11
+CFLGAS = -I.
+LDLIBS += -lstdc++ -lm
+DEPS = scheduler.h linked-list.h include.h 
+OBJ = main.o
+
+%.o: %.c $(DEPS)
+		$(CC) -c -o $@ $< $(CFLAGS) $(CXXFLAGS) $(LDLIBS)
+
+main: $(OBJ)
+		$(CC) -o $@ $^ $(CFLAGS) $(CXXFLAGS) $(LDLIBS)
+
+clean:
+		rm -f main *.o 

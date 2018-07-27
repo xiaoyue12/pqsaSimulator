@@ -11,9 +11,9 @@ import update
 #period = [2000000]
 #delta = 2000
 #capacity = 30000
-top = '/home/wanwenkai/simulator_scripts/verify_sourceData/'
-datapath = '/home/wanwenkai/simulator_scripts/annealing_scripts/'
-savePath = '/home/wanwenkai/simulator_scripts/annealingData/'
+top = '/home/kevin/simulator_scripts/verify_sourceData/'
+datapath = '/home/kevin/simulator_scripts/annealing_scripts/'
+savePath = '/home/kevin/simulator_scripts/annealingData/'
 #initial bandwidth level, rate, capacity and period
 item = ['downlink_800000', '10', '30000', '2000000']
 gammaList = []
@@ -51,6 +51,7 @@ class process_bw_level(threading.Thread):
         capacity = self.__capacity
         delta = self.__delta
         trace = self.__trace
+		#print('./main' + ' ' + str(rate) + ' ' + str(window) + ' ' + str(delta) + ' ' + str(capacity) + ' ' + str(period) + ' ' + trace + ' ' + str(gamma) + ' ' + str(t) + ' ' + '> /dev/null 2>&1')
         os.system('./main' + ' ' + str(rate) + ' ' + str(window) + ' ' + \
         str(delta) + ' ' + str(capacity) + ' ' + str(period) + ' ' + trace + \
         ' ' + str(gamma) + ' ' + str(t) + ' ' + '> /dev/null 2>&1')
@@ -263,7 +264,7 @@ if __name__ == "__main__":
 
     while 1:
         InitialFunc(PARAMETER)
-
+		#print("haha")
         while not stopIteration():
             path = GetCurrentPath()
             if path == 0:
