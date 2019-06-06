@@ -1,10 +1,9 @@
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 # modify filename
-'''
-filename_1 = 'result_60000000_gamma.txt'
+
+filename_1 = 'result_gamma.txt'
 X1,Y1 = [],[]
+Y11 = []
 with open(filename_1,'r') as f1:
 	lines = f1.readlines() 
 	for line in lines:
@@ -16,8 +15,9 @@ with open(filename_1,'r') as f1:
 			value=[float(s) for s in line.split()]
 			if x == value[0]:
 				Y1.append(value[1])
+				Y11.append(value[2])
 				break
-
+'''
 filename_2 = 'result_60000000_t.txt'
 X2,Y2 = [],[]
 with open(filename_2,'r') as f2:
@@ -32,7 +32,7 @@ with open(filename_2,'r') as f2:
 			if x == (value[0]/10000.0):
 				Y2.append(value[1])
 				break
-'''
+
 filename_3 = 'result_window.txt'
 X3,Y3 = [],[]
 with open(filename_3,'r') as f3:
@@ -77,3 +77,11 @@ plt.legend(loc=8,fontsize='small',bbox_to_anchor=(1.17,0),title='session length 
 out_png='/home/qiuxiaoyue/simulator_scripts/annealing_scripts/figure_2.png'
 plt.savefig(out_png,dpi=200)
 #plt.show()
+'''
+
+plt.plot(X1,Y1,color = 'blue',label = 'throughput',linewidth = 1)
+plt.twinx()
+plt.plot(X1,Y11,color = 'red',label = 'delay',linewidth = 1)
+plt.legend(loc=0,fontsize='small',title='parameter is gamma')
+
+plt.show()
